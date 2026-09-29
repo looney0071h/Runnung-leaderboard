@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>러닝 리더보드</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    margin:0;
+    padding:20px;
+}
+.container{
+    max-width:700px;
+    margin:auto;
+}
+.card{
+    background:white;
+    padding:16px;
+    border-radius:12px;
+    margin-bottom:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+h1{
+    text-align:center;
+}
+input, select, button{
+    width:100%;
+    padding:12px;
+    margin-top:8px;
+    box-sizing:border-box;
+}
+button{
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+th, td{
+    padding:10px;
+    text-align:center;
+    border-bottom:1px solid #ddd;
+}
+th{
+    background:#2563eb;
+    color:white;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🏃 러닝 리더보드</h1>
+<div class="card">
+<h3>기록 등록</h3>
+<select id="event">
+    <option value="3km">3km</option>
+    <option value="5km">5km</option>
+    <option value="10km">10km</option>
+</select>
+<input id="name" type="text" placeholder="이름">
+<input id="time" type="number" placeholder="기록(초)">
+<button onclick="saveRecord()">기록 등록</button>
+</div>
+<div class="card">
+<h3>리더보드</h3>
+<select id="viewEvent">
+    <option value="3km">3km</option>
+    <option value="5km">5km</option>
+    <option value="10km">10km</option>
+</select>
+<table>
+<thead>
+<tr>
+    <th>순위</th>
+    <th>이름</th>
+    <th>기록</th>
+</tr>
+</thead>
+<tbody id="board"></tbody>
+</table>
+</div>
+</div>
+<script type="module">
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+    getDatabase,
+    ref,
+    push,
+    onValue
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyAi2XlbGWlWY_pVvtO8g9wVXINUWPGFWSg",
+  authDomain: "project-1539460191412438878.firebaseapp.com",
+  databaseURL: "https://project-1539460191412438878-default-rtdb.firebaseio.com",
+  projectId: "project-1539460191412438878",
+  storageBucket: "project-1539460191412438878.firebasestorage.app",
+  messagingSenderId: "882380991889",
+  appId: "1:882380991889:web:2167a35e93c8b0345f7e30"
+};
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+window.saveRecord = async function(){
+    const event =
+        document.getElementById("event").value;
+    const name =
+        document.getElementById("name").value.trim();
+    const time =
+        Number(document.getElementById("time").value);
+    if(!name || !time){
+        alert("이름과 기록을 입력해주세요.");
+        return;
+    }
+    await push(
+        ref(db,"records"),
+        {
+            event,
+            name,
+            time
+        }
+    );
+    document.getElementById("name").value="";
+    document.getElementById("time").value="";
+};
+function loadLeaderboard(){
+    const selected =
+        document.getElementById("viewEvent").value;
+    onValue(ref(db,"records"), (snapshot)=>{
+        const data = snapshot.val() || {};
+        const records =
+            Object.values(data)
+            .filter(r => r.event === selected)
+            .sort((a,b)=>a.time-b.time);
+        const board =
+            document.getElementById("board");
+        board.innerHTML="";
+        records.forEach((r,index)=>{
+            const min =
+                Math.floor(r.time/60);
+            const sec =
+                r.time%60;
+            board.innerHTML += `
+                <tr>
+                    <td>${index+1}</td>
+                    <td>${r.name}</td>
+                    <td>${min}분 ${sec}초</td>
+                </tr>
+            `;
+        });
+    });
+}
+document
+.getElementById("viewEvent")
+.addEventListener("change", loadLeaderboard);
+loadLeaderboard();
+</script>
+</body>
+</html>
